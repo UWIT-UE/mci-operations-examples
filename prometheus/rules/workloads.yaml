@@ -1,0 +1,273 @@
+# Rules cloned from kube-prometheus 
+# with modifications to match tenant namespaces.
+#
+# Required customizations
+#   - Set namespaces regexes as appropriate to match your namespaces
+#   - Set ci_name to a UW Connect CI that matches your group
+#   - Set focus to desired value for rule.
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: example-workload-rules
+  namespace: default
+  labels:
+    prometheus: k8s
+    role: alert-rules
+
+spec:
+  groups:
+  - name: kubernetes-workloads
+    rules:
+    - alert: TargetDown
+      annotations:
+        description: '{{ printf "%.4g" $value }}% of the {{ $labels.job }}/{{ $labels.service
+          }} targets in {{ $labels.namespace }} namespace are down.'
+        summary: TargetDown
+      expr: 100 * (count(up{namespace=~"default|anothernamespace"}
+        == 0) BY (job, namespace, service) / count(up{namespace=~"default|anothernamespace"})
+        BY (job, namespace, service)) > 10
+      for: 10m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "3"
+
+    - alert: KubePodCrashLooping
+      annotations:
+        description: Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container
+          }}) is restarting {{ printf "%.2f" $value }} times / 5 minutes.
+        summary: KubePodCrashLooping
+      expr: |
+        rate(kube_pod_container_status_restarts_total{job="kube-state-metrics",namespace=~"default|anothernamespace"}[15m]) * 60 * 5 > 0
+      for: 15m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "2"
+
+    - alert: KubePodNotReady
+      annotations:
+        description: Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in a non-ready
+          state for longer than 15 minutes.
+        summary: KubePodNotReady
+      expr: |
+        sum by (namespace, pod) (max by(namespace, pod) (kube_pod_status_phase{job="kube-state-metrics",namespace=~"default|anothernamespace",phase=~"Pending|Unknown"}) * on(namespace, pod) group_left(owner_kind) max by(namespace, pod, owner_kind) (kube_pod_owner{owner_kind!="Job"})) > 0
+      for: 15m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "2"
+
+    - alert: KubeDeploymentGenerationMismatch
+      annotations:
+        description: Deployment generation for {{ $labels.namespace }}/{{ $labels.deployment
+          }} does not match, this indicates that the Deployment has failed but has
+          not been rolled back.
+        summary: KubeDeploymentGenerationMismatch
+      expr: |
+        kube_deployment_status_observed_generation{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+          !=
+        kube_deployment_metadata_generation{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+      for: 15m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "2"
+
+    - alert: KubeDeploymentReplicasMismatch
+      annotations:
+        description: Deployment {{ $labels.namespace }}/{{ $labels.deployment }} has
+          not matched the expected number of replicas for longer than 15 minutes.
+        summary: KubeDeploymentReplicasMismatch
+      expr: |
+        kube_deployment_spec_replicas{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+          !=
+        kube_deployment_status_replicas_available{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+      for: 15m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "2"
+
+    - alert: KubeStatefulSetReplicasMismatch
+      annotations:
+        description: StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }}
+          has not matched the expected number of replicas for longer than 15 minutes.
+        summary: KubeStatefulSetReplicasMismatch
+      expr: |
+        kube_statefulset_status_replicas_ready{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+          !=
+        kube_statefulset_status_replicas{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+      for: 15m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "2"
+
+    - alert: KubeStatefulSetGenerationMismatch
+      annotations:
+        description: StatefulSet generation for {{ $labels.namespace }}/{{ $labels.statefulset
+          }} does not match, this indicates that the StatefulSet has failed but has
+          not been rolled back.
+        summary: KubeStatefulSetGenerationMismatch
+      expr: |
+        kube_statefulset_status_observed_generation{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+          !=
+        kube_statefulset_metadata_generation{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+      for: 15m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "2"
+
+    - alert: KubeStatefulSetUpdateNotRolledOut
+      annotations:
+        description: StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }}
+          update has not been rolled out.
+        summary: KubeStatefulSetUpdateNotRolledOut
+      expr: |
+        max without (revision) (
+          kube_statefulset_status_current_revision{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+            unless
+          kube_statefulset_status_update_revision{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+        )
+          *
+        (
+          kube_statefulset_replicas{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+            !=
+          kube_statefulset_status_replicas_updated{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+        )
+      for: 15m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "2"
+
+    - alert: KubeDaemonSetRolloutStuck
+      annotations:
+        description: Only {{ $value | humanizePercentage }} of the desired Pods of
+          DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset }} are scheduled
+          and ready.
+        summary: KubeDaemonSetRolloutStuck
+      expr: |
+        kube_daemonset_status_number_ready{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+          /
+        kube_daemonset_status_desired_number_scheduled{job="kube-state-metrics",namespace=~"default|anothernamespace"} < 1.00
+      for: 15m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "2"
+
+    - alert: KubeContainerWaiting
+      annotations:
+        description: Pod {{ $labels.namespace }}/{{ $labels.pod }} container {{ $labels.container}}
+          has been in waiting state for longer than 1 hour.
+        summary: KubeContainerWaiting
+      expr: |
+        sum by (namespace, pod, container) (kube_pod_container_status_waiting_reason{job="kube-state-metrics",namespace=~"default|anothernamespace"}) > 0
+      for: 1h
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "3"
+
+    - alert: KubeDaemonSetNotScheduled
+      annotations:
+        description: '{{ $value }} Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset
+          }} are not scheduled.'
+        summary: KubeDaemonSetNotScheduled
+      expr: |
+        kube_daemonset_status_desired_number_scheduled{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+          -
+        kube_daemonset_status_current_number_scheduled{job="kube-state-metrics",namespace=~"default|anothernamespace"} > 0
+      for: 10m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "3"
+
+    - alert: KubeDaemonSetMisScheduled
+      annotations:
+        description: '{{ $value }} Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset
+          }} are running where they are not supposed to run.'
+        summary: KubeDaemonSetMisScheduled
+      expr: |
+        kube_daemonset_status_number_misscheduled{job="kube-state-metrics",namespace=~"default|anothernamespace"} > 0
+      for: 10m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "3"
+
+    - alert: KubeCronJobRunning
+      annotations:
+        description: CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is taking
+          more than 1h to complete.
+        summary: KubeCronJobRunning
+      expr: |
+        time() - kube_cronjob_next_schedule_time{job="kube-state-metrics",namespace=~"default|anothernamespace"} > 3600
+      for: 1h
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "3"
+
+    - alert: KubeJobCompletion
+      annotations:
+        description: Job {{ $labels.namespace }}/{{ $labels.job_name }} is taking
+          more than one hour to complete.
+        summary: KubeJobCompletion
+      expr: |
+        kube_job_spec_completions{job="kube-state-metrics",namespace=~"default|anothernamespace"} - kube_job_status_succeeded{job="kube-state-metrics",namespace=~"default|anothernamespace"}  > 0
+      for: 1h
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "3"
+
+    - alert: KubeJobFailed
+      annotations:
+        description: Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to
+          complete.
+        summary: KubeJobFailed
+      expr: |
+        kube_job_failed{job="kube-state-metrics",namespace=~"default|anothernamespace"}  > 0
+      for: 15m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "3"
+
+    - alert: KubeHpaReplicasMismatch
+      annotations:
+        description: HPA {{ $labels.namespace }}/{{ $labels.hpa }} has not matched
+          the desired number of replicas for longer than 15 minutes.
+        summary: KubeHpaReplicasMismatch
+      expr: |
+        (kube_hpa_status_desired_replicas{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+          !=
+        kube_hpa_status_current_replicas{job="kube-state-metrics",namespace=~"default|anothernamespace"})
+          and
+        changes(kube_hpa_status_current_replicas[15m]) == 0
+      for: 15m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "3"
+
+    - alert: KubeHpaMaxedOut
+      annotations:
+        description: HPA {{ $labels.namespace }}/{{ $labels.hpa }} has been running
+          at max replicas for longer than 15 minutes.
+        summary: KubeHpaMaxedOut
+      expr: |
+        kube_hpa_status_current_replicas{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+          ==
+        kube_hpa_spec_max_replicas{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+      for: 15m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "3"

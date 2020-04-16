@@ -1,4 +1,5 @@
-# Rules to monitor Persistent Volume utilization in tenant namespaces
+# Rules cloned from kube-prometheus
+# with modifications to match tenant namespaces.
 #
 # Required customizations
 #   - Set exported_namespaces regex as appropriate to match your namespaces
