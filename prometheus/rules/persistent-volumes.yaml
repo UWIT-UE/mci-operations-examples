@@ -1,0 +1,70 @@
+# Rules to monitor Persistent Volume utilization in tenant namespaces
+#
+# Required customizations
+#   - Set exported_namespaces regex as appropriate to match your namespaces
+#   - Set ci_name to a UW Connect CI that matches your group
+#   - Set focus to desired value for rule.
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: example-storage-rules
+  namespace: default
+  labels:
+    prometheus: k8s
+    role: alert-rules
+
+spec:
+  groups:
+  - name: kubernetes-storage
+    rules:
+    - alert: KubePersistentVolumeUsageCritical
+      annotations:
+        description: The PersistentVolume claimed by {{ $labels.persistentvolumeclaim
+          }} in Namespace {{ $labels.namespace }} is only {{ $value | humanizePercentage
+          }} free.
+        summary: KubePersistentVolumeUsageCritical
+      expr: |
+        kubelet_volume_stats_available_bytes{job="kubelet", metrics_path="/metrics", exported_namespace=~"default|anothernamespace"}
+          /
+        kubelet_volume_stats_capacity_bytes{job="kubelet", metrics_path="/metrics", exported_namespace=~"default|anothernamespace"}
+          < 0.03
+      for: 1m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "2"
+
+    - alert: KubePersistentVolumeFullInFourDays
+      annotations:
+        description: Based on recent sampling, the PersistentVolume claimed by {{
+          $labels.persistentvolumeclaim }} in Namespace {{ $labels.namespace }} is
+          expected to fill up within four days. Currently {{ $value | humanizePercentage
+          }} is available.
+        summary: KubePersistentVolumeFullInFourDays
+      expr: |
+        (
+          kubelet_volume_stats_available_bytes{job="kubelet", metrics_path="/metrics", exported_namespace=~"default|anothernamespace"}
+            /
+          kubelet_volume_stats_capacity_bytes{job="kubelet", metrics_path="/metrics", exported_namespace=~"default|anothernamespace"}
+        ) < 0.15
+        and
+        predict_linear(kubelet_volume_stats_available_bytes{job="kubelet", metrics_path="/metrics"}[6h], 4 * 24 * 3600) < 0
+      for: 1h
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "3"
+
+    - alert: KubePersistentVolumeErrors
+      annotations:
+        description: The persistent volume {{ $labels.persistentvolume }} has status
+          {{ $labels.phase }}.
+        summary: KubePersistentVolumeErrors
+      expr: |
+        kube_persistentvolume_status_phase{phase=~"Failed|Pending",job="kube-state-metrics", exported_namespace=~"default|anothernamespace"} > 0
+      for: 5m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "2"
