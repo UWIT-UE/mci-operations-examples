@@ -1,0 +1,32 @@
+# Rules to monitor Flux deployment
+#   From https://docs.fluxcd.io/en/latest/references/monitoring.html
+#
+# Required customizations
+#   - Set ci_name to a UW Connect CI that matches your group
+#   - Set focus to desired value for rule.
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: example-flux-sync-rules
+  namespace: default
+  labels:
+    prometheus: k8s
+    role: alert-rules
+
+spec:
+  groups:
+  - name: flux-sync
+    rules:
+    - alert: FluxSyncErrors
+      annotations:
+        description: >
+           Flux sync errors found. There are manifests with parse errors or there are manifests with duplicate ids
+           or infrastructure issues. Check Flux logs for errors: kubectl logs -l name=flux -c flux -n mci-shared
+        summary: FluxSyncErrors
+      expr: delta(flux_daemon_sync_duration_seconds_count{namespace="mci-shared",success='true'}[6m]) < 1
+      for: 10m
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "3"
