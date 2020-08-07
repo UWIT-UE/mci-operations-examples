@@ -1,0 +1,87 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-app
+  labels:
+    app: web-app
+spec:
+  selector:
+    app: web-app
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+  labels:
+    app: web-app
+  annotations:
+    fluxcd.io/automated: "true"
+    fluxcd.io/tag.web-app: "semver:*"
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 3
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: web-app
+  template:
+    metadata:
+      labels:
+        app: web-app
+    spec:
+      containers:
+      - name: web-app
+        image: web-app-image
+        ports:
+        - containerPort: 8000
+        readinessProbe:
+          # when this is passing traffic will be routed to this container
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        livenessProbe:
+          # when this fails the container will be killed
+          # this should be more tolerant than the readinessProbe
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 60
+        lifecycle:
+          postStart:
+            exec:
+              # psql and psycopg2 require specific owner and permissions for keys. kubernetes has no native way to do this yet.
+              command:
+              - "sh"
+              - "-c"
+              - "cp /usr/local/ssl/certs/toolop.cac.washington.edu.key /tmp/toolop.key\
+                \ && chmod 0400 /tmp/toolop.key"
+        volumeMounts:
+        # these files will be updated if the secrets change
+        - name: toolop-secret-files
+          mountPath: "/home/toolop/secrets"
+        - name: toolop-dot-ssh
+          mountPath: "/home/toolop/.ssh"
+        - name: toolop-certs
+          mountPath: "/usr/local/ssl/certs"
+      volumes:
+      - name: toolop-secret-files
+        secret:
+          secretName: toolop-secret-files
+      - name: toolop-dot-ssh
+        secret:
+          secretName: toolop-dot-ssh
+      - name: toolop-certs
+        secret:
+          secretName: toolop-certs
+          defaultMode: 0444
+---

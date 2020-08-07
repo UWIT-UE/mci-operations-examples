@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+spec:
+  template:
+    spec:
+      containers:
+      - name: web-app
+        resources:
+          requests:
+            memory: "128M"
+            cpu: "0.5"
+          limits:
+            memory: "512M"
+            cpu: "1.0"
+        env:
+        - name: BARISTA_HOME
+          value: https://barista.cac.washington.edu/

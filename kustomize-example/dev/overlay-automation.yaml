@@ -1,0 +1,7 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: '*'
+  annotations:
+    fluxcd.io/automated: "true"
+    fluxcd.io/tag.web-app: semver:*-dev

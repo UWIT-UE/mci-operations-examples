@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+spec:
+  template:
+    spec:
+      containers:
+      - name: web-app
+        resources:
+          requests:
+            memory: "64M"
+            cpu: "0.01"
+          limits:
+            memory: "256M"
+            cpu: "0.5"
+        env:
+        - name: APPLICATION_ROOT
+          value: /ipfo
+        - name: CACHE_REDIS_HOST
+          value: redis
+        - name: DSN_TOOLSDB
+          value: "host=toolsdb dbname=toolsdb user=toolop.cac.washington.edu sslmode=require\
+            \ sslcert=/usr/local/ssl/certs/toolop.cac.washington.edu.cert sslkey=/tmp/toolop.key"
+        - name: DSN_RIPIT
+          value: "host=ripitdb dbname=ripit_2 user=toolop.cac.washington.edu sslmode=require\
+            \ sslcert=/usr/local/ssl/certs/toolop.cac.washington.edu.cert sslkey=/tmp/toolop.key"
+        - name: DSN_IRONFIST
+          value: "host=ironfistdb dbname=ironfist user=toolop.cac.washington.edu sslmode=require\
+            \ sslcert=/usr/local/ssl/certs/toolop.cac.washington.edu.cert sslkey=/tmp/toolop.key"
+        - name: FLASK_SESSION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: flask-session-key
+              key: token
+        - name: BARISTA_HOME
+          value: https://barista.cac.washington.edu/
