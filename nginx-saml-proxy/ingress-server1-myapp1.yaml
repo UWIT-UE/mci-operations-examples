@@ -1,0 +1,29 @@
+---
+# Ingress for myapp1
+# Example showing basic app with access limited by group
+#
+# Requires SAML, with group u_somegroup
+# Uses rewrite to strip path prefix
+#
+# Customize: name, namespace, group name in auth-url, host, path, backend
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: server1-myapp1
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/auth-url: "https://$host/saml/status/group/u_somegroup"
+    nginx.ingress.kubernetes.io/auth-signin: "https://$host/saml/login$request_uri"
+spec:
+  rules:
+  - host: server1.example.uw.edu
+    http:
+      paths:
+      - path: /myapp1(/|$)(.*)
+        backend:
+          serviceName: myapp1
+          servicePort: http
+

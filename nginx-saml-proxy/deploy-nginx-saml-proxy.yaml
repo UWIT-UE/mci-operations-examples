@@ -1,0 +1,97 @@
+# Deploy nginx-saml-proxy standalone to handle requests for any Ingress
+#
+# Configuration required:
+#   1. Create a Vault secret containing Flask SECRET_KEY and configure ExternalSecret (XXX values).
+#       A common key must be used so that all replicas encrypt cookies the same.
+#   2. Set desired replicas, three recommended.
+#   3. Namespace as desired.
+
+---
+apiVersion: 'kubernetes-client.io/v1'
+kind: ExternalSecret
+metadata:
+  name: nginx-saml-proxy-secret
+  namespace: default
+spec:
+  backendType: vault
+  vaultMountPoint: kubernetes/uwit-mci-XXXX-cluster
+  vaultRole: consumer-kes
+  data:
+  - name: secret-key
+    key: XXX/kv/data/nginx-saml-proxy
+    property: secret-key
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: default
+  name: nginx-saml-proxy
+  labels:
+    app.kubernetes.io/name: nginx-saml-proxy
+spec:
+  selector:
+    app.kubernetes.io/name: nginx-saml-proxy
+  ports:
+  - name: nginx-saml-proxy
+    port: 5000
+    targetPort: 5000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: default
+  name: nginx-saml-proxy
+  labels:
+    app.kubernetes.io/name: nginx-saml-proxy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nginx-saml-proxy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nginx-saml-proxy
+    spec:
+      containers:
+      - name: nginx-saml-proxy
+        image: docker.io/uwiam/nginx-saml-proxy:0.6.3
+        imagePullPolicy: IfNotPresent
+        resources:
+         limits:
+           cpu: "15m"
+           memory: "56Mi"
+         requests:
+           cpu: "15m"
+           memory: "56Mi"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 5000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 5000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          failureThreshold: 6
+        env:
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nginx-saml-proxy-secret
+              key: secret-key
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: nginx-saml-proxy
+              topologyKey: "kubernetes.io/hostname"

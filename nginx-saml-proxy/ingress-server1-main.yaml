@@ -1,0 +1,32 @@
+---
+# Ingress for SNI server1.example.uw.edu
+# Example showing basic setup with Let's Encrypt
+#
+# Uses letsencrypt for TLS cert 
+# nginx-saml-proxy will infer SP name "https://server1.example.uw.edu/saml"
+#
+# Configure: name, namespace, host names
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: server1-main
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/x-forwarded-prefix: /saml/
+spec:
+  tls:
+  - hosts:
+    - server1.example.uw.edu
+    secretName: server1-cert
+  rules:
+  - host: server1.example.uw.edu
+    http:
+      paths:
+      - path: /saml/(.*)
+        backend:
+          serviceName: nginx-saml-proxy
+          servicePort: 5000

@@ -1,0 +1,23 @@
+---
+# Ingress for myapp4
+# Example showing app path not using SAML
+#
+# Customize: name, namespace, host, path, backend
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: server1-myapp4
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: server1.example.uw.edu
+    http:
+      paths:
+      - path: /myapp4
+        backend:
+          serviceName: myapp4
+          servicePort: http
+
