@@ -1,12 +1,17 @@
 ---
 # Ingress for myapp1
+# Example showing basic app with access limited by group
+#
 # Requires SAML, with group u_somegroup
 # Uses rewrite to strip path prefix
+#
+# Customize: name, namespace, group name in auth-url, host, path, backend
+
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: server1-myapp1
-  namespace: mci-monitoring
+  namespace: default
   annotations:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/rewrite-target: /$2

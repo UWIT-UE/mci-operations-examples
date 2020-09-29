@@ -1,8 +1,11 @@
 ---
 # Ingress for SNI server1.example.uw.edu
+# Example showing basic setup with Let's Encrypt
+#
 # Uses letsencrypt for TLS cert 
-# Adds common /saml/ path
 # nginx-saml-proxy will infer SP name "https://server1.example.uw.edu/saml"
+#
+# Configure: name, namespace, host names
 
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress

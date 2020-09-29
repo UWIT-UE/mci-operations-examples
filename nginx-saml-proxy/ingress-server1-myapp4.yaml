@@ -1,11 +1,14 @@
 ---
 # Ingress for myapp4
-# Does not require SAML
+# Example showing app path not using SAML
+#
+# Customize: name, namespace, host, path, backend
+
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
-  name: server1-myapp3
-  namespace: mci-monitoring
+  name: server1-myapp4
+  namespace: default
   annotations:
     kubernetes.io/ingress.class: "nginx"
 spec:

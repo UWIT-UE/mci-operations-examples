@@ -1,3 +1,26 @@
+# Deploy nginx-saml-proxy standalone to handle requests for any Ingress
+#
+# Configuration required:
+#   1. Create a Vault secret containing Flask SECRET_KEY and configure ExternalSecret (XXX values).
+#       A common key must be used so that all replicas encrypt cookies the same.
+#   2. Set desired replicas, three recommended.
+#   3. Namespace as desired.
+
+---
+apiVersion: 'kubernetes-client.io/v1'
+kind: ExternalSecret
+metadata:
+  name: nginx-saml-proxy-secret
+  namespace: default
+spec:
+  backendType: vault
+  vaultMountPoint: kubernetes/uwit-mci-XXXX-cluster
+  vaultRole: consumer-kes
+  data:
+  - name: secret-key
+    key: XXX/kv/data/nginx-saml-proxy
+    property: secret-key
+
 ---
 apiVersion: v1
 kind: Service
@@ -72,19 +95,3 @@ spec:
                 matchLabels:
                   app.kubernetes.io/name: nginx-saml-proxy
               topologyKey: "kubernetes.io/hostname"
-
----
-apiVersion: 'kubernetes-client.io/v1'
-kind: ExternalSecret
-metadata:
-  name: nginx-saml-proxy-secret
-  namespace: default
-spec:
-  backendType: vault
-  vaultMountPoint: kubernetes/uwit-mci-XXXX-cluster
-  vaultRole: consumer-kes
-  data:
-  - name: secret-key
-    key: XXX/kv/data/nginx-saml-proxy
-    property: secret-key
-

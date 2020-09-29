@@ -1,13 +1,19 @@
 ---
 # Ingress for myapp2
+# Example showing app with access limited by group, passing 
+#   x-saml-user auth header to backend
+#
 # Requires SAML, with group u_somegroup
 # Uses rewrite to strip path prefix
 # Passes X-SAML-User header from auth to backend service
+#
+# Customize: name, namespace, group name in auth-url, host, path, backend
+
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: server1-myapp2
-  namespace: mci-monitoring
+  namespace: default
   annotations:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/rewrite-target: /$2

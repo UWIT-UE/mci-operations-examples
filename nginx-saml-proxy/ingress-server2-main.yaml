@@ -1,14 +1,18 @@
 ---
 # Ingress for SNI server2.example.uw.edu
+# Example overriding SAML Entity ID
+#
 # TLS cert is manually managed, not lets encrypt
-# Adds required common /saml/ path
-# Override SP entity ID. Server location needs to be listed as an ACS
-#   under that Entity ID.
+# Override SP entity ID. (Server location needs to be listed as an ACS
+#   under that Entity ID.)
+#
+# Configure: name, namespace, X-Saml-Entity-Id and X-Saml-Acs, host names
 
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
-  name: server1-main
+  # Configure name
+  name: server2-main
   namespace: default
   annotations:
     kubernetes.io/ingress.class: "nginx"
