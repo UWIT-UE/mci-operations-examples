@@ -1,4 +1,4 @@
-# Cluster-wide NGINX SAML Proxy
+# Shared NGINX SAML Proxy for Ingresses
 
 Integrates SAML Proxy with the standard Ingress NGINX using annotations.
 
