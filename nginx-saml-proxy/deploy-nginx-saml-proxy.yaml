@@ -33,8 +33,8 @@ spec:
   selector:
     app.kubernetes.io/name: nginx-saml-proxy
   ports:
-  - name: nginx-saml-proxy
-    port: 5000
+  - name: http
+    port: 80
     targetPort: 5000
 
 ---
