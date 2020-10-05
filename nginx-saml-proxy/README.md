@@ -9,8 +9,8 @@ Integrates SAML Proxy with the standard Ingress NGINX using annotations.
 - Although the same server name is defined in multiple Ingress definitions with different paths, they are merged resulting in unified routing for the server name.
 - It is important to note that each separate Ingress is effectively a separate stanza in the ingress-nginx configuration. The annotations in an Ingress definition apply to that stanza, thus one must not combine Ingress definitions that require different settings/annotations.
 - Namespace notes:
-  - Ingress objects must be in the same namespace as the backend Services they reference, as usual.
-  - ingress-nginx will merge server names regardless of namespace. In the example presented here, the resources in nginx-saml-proxy deployment and ingress-server1-main could be in namespace "default" and the resources of ingress-server1-myapp1 could be in namespace "myapp1" but they will still result in unified routing.
+  - Ingress objects must be in the same namespace as the backend Services they reference, as usual. In this example deploy-nginx-saml-proxy resources and ingress-\*-main resources must be in the same namespace. Other ingress resources must be in the same namespace as their backend.
+  - ingress-nginx will merge server names regardless of namespace. In this example, the resources in nginx-saml-proxy deployment and ingress-server1-main could be in namespace "default" and the resources of ingress-server1-myapp1 could be in namespace "myapp1" but will still result in unified routing.
 
 ## Details
 See descriptive comments in the following files.
