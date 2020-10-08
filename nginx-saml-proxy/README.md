@@ -21,5 +21,6 @@ deploy-nginx-saml-proxy | Common nginx-saml-proxy deployment, external secret
 ingress-server1-main    | Main Ingress for server1
 ingress-server1-*       | Additional paths for server1 with different options
 ingress-server2-main    | Main Ingress for server2
+ingress-server2-*       | Additional paths for server2 with different options
 
 
