@@ -1,7 +1,7 @@
 ---
 # Ingress for myapp3
-# Example showing app with access limited by group, passing 
-#   x-saml-user auth header to backend
+# Example showing app with access limited by group, rewriting 
+#   x-saml-user auth header to Remote-User
 #
 # Requires SAML, with group u_othergroup (different from other paths)
 # Does not use rewrite
