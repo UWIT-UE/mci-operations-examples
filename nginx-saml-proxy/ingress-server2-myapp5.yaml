@@ -18,7 +18,10 @@ metadata:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/auth-url: "https://$host/saml/status/group/u_appgroup"
     nginx.ingress.kubernetes.io/auth-signin: "https://$host/saml/login$request_uri"
+    # Enable auth caching with auth-cache-key
     nginx.ingress.kubernetes.io/auth-cache-key: $remote_user$http_authorization
+    # ingress-nginx default caches 401 which causes a redirect loop, so must only cache success
+    nginx.ingress.kubernetes.io/auth-cache-duration: 200 5m
 spec:
   rules:
   - host: server2.example.uw.edu
