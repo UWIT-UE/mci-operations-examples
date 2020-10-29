@@ -23,4 +23,5 @@ ingress-server1-*       | Additional paths for server1 with different options
 ingress-server2-main    | Main Ingress for server2
 ingress-server2-*       | Additional paths for server2 with different options
 
-
+## Updates
+- October 2020: changes for nginx-saml-proxy v0.7.x using ingress-nginx 'rd' return_to parameter

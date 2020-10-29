@@ -17,7 +17,7 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/auth-url: "https://$host/saml/status/group/u_othergroup"
-    nginx.ingress.kubernetes.io/auth-signin: "https://$host/saml/login$request_uri"
+    nginx.ingress.kubernetes.io/auth-signin: "https://$host/saml/login"
     nginx.ingress.kubernetes.io/configuration-snippet: |
       auth_request_set $auth_user $upstream_http_x_saml_user;
       proxy_set_header Remote-User $auth_user;

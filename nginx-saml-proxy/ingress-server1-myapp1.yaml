@@ -16,7 +16,7 @@ metadata:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/auth-url: "https://$host/saml/status/group/u_somegroup"
-    nginx.ingress.kubernetes.io/auth-signin: "https://$host/saml/login$request_uri"
+    nginx.ingress.kubernetes.io/auth-signin: "https://$host/saml/login"
 spec:
   rules:
   - host: server1.example.uw.edu

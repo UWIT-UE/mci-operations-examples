@@ -57,7 +57,7 @@ spec:
     spec:
       containers:
       - name: nginx-saml-proxy
-        image: docker.io/uwiam/nginx-saml-proxy:0.6.3
+        image: docker.io/uwiam/nginx-saml-proxy:0.7.0
         imagePullPolicy: IfNotPresent
         resources:
          limits:
