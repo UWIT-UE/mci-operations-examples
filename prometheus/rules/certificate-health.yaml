@@ -1,0 +1,49 @@
+# Rules to double check that cert-manager doesn't let a cert expire
+# Both of these cases would indicate a cert-manager problem that should
+# be escalated to MCI to look at cert-manager. The alerts are meant
+# as a safety net for your application.
+#
+# Required customizations
+#   - Set ci_name to a UW Connect CI that matches your group
+#   - Set focus to desired value for rule.
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cert-health-rules
+  labels:
+    prometheus: k8s
+    role: alert-rules
+spec:
+  groups:
+  - name: cert-health.rules
+    rules:
+    - alert: CertObjState
+      annotations:
+        description: |
+           A Certificate object has been in un-ready state for 24 hours. Cert-manager may be confused.
+           The troubled certificate is: "{{ $labels.exported_namespace }}\{{ $labels.name }}"
+           Check cert-manager pod logs for errors: "kubectl logs -l app=cert-manager -n cert-manager | grep {{ $labels.name }}"
+           The typical resolution is to delete the Certificate object and let it be recreated.
+        summary: Certificate state is un-Ready
+      expr: certmanager_certificate_ready_status{condition="False"} == 1
+      for: 24h
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "3"
+    - alert: CertExpiresSoon
+      annotations:
+        description: |
+           A certificate is less than 7 days from expiration. This should not normally happen as
+           cert-manager is keeping track of things. This indicates a problem. A possible resolution is to
+           delete the Certificate object and let it be recreated. But the cause may be in cert-manager
+           and should be escalated to the MCI team.
+           The troubled certificate is: "{{ $labels.exported_namespace }}\{{ $labels.name }}"           
+        summary: Certificate will expire soon
+      expr: certmanager_certificate_expiration_timestamp_seconds - time() < 7*86400
+      for: 1h
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "3"
