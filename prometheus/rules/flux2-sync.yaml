@@ -1,0 +1,50 @@
+# Rules to monitor Flux deployment
+#   From https://fluxcd.io/docs/guides/monitoring/
+#
+# Required customizations
+#   - Set ci_name to a UW Connect CI that matches your group
+#   - Set focus to desired value for rule.
+#
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: flux2-rules
+  namespace: default
+  labels:
+    prometheus: k8s
+    role: alert-rules
+
+spec:
+  groups:
+  - name: flux2-operations
+    rules:
+    - alert: FluxReconciliationFailure
+      #
+      # This rule is a catchall for every kind of Flux object
+      # If different Flux failures need different responses, eg Kustomization failures should be `focus: 2` to create an INC,
+      # then additional rules could be added with "kind=" set in the first term. For example:
+      #   gotk_reconcile_condition{status="False",type="Ready",exported_namespace="default", kind="Kustomization"}
+      #
+      expr: max(gotk_reconcile_condition{status="False",type="Ready",exported_namespace="default"}) by (exported_namespace, name, kind) + on(exported_namespace, name, kind) (max(gotk_reconcile_condition{status="Deleted"}) by (exported_namespace, name, kind)) * 2 == 1
+      for: 15m
+      annotations:
+        summary: 'Flux reconciliation failing for more than 15 minutes.'
+        description: |
+           '{{ $labels.kind }} {{ $labels.exported_namespace }}/{{ $labels.name }} reconciliation has been failing for more than 15 minutes.'
+
+           Check events for details: kubectl describe {{ $labels.kind }} {{ $labels.name }} -n {{ $labels.exported_namespace }}
+
+           GitRepository errors may be related to repository access or connectivity. 
+           Kustomization errors may be caused by Kubernetes yaml errors in the operations repo. 
+           ImageRepository issues may be caused by connectivity or credential problems with the image registry.
+           ImagePolicy errors may be caused by image tag matching problems.
+           ImageUpdateAutomation errors may relate to problems updating git with new image versions due to connectivity or credential problems.
+           HelmRepository errors may be caused by chart repository access or connectivity issues.
+           HelmRelease errors may be caused by chart templating or values errors.
+
+      labels:
+        ci_name: YourConfigurationItemHere
+        alert_notify: "true"
+        focus: "3"
+
