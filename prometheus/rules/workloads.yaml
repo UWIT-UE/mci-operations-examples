@@ -214,14 +214,15 @@ spec:
         alert_notify: "true"
         focus: "3"
 
-    - alert: KubeJobCompletion
+    - alert: KubeJobNotCompleted
       annotations:
         description: Job {{ $labels.namespace }}/{{ $labels.job_name }} is taking
-          more than one hour to complete.
-        summary: KubeJobCompletion
+          more than {{ "43200" | humanizeDuration }} to complete.
+        summary: Job did not complete in time
       expr: |
-        kube_job_spec_completions{job="kube-state-metrics",namespace=~"default|anothernamespace"} - kube_job_status_succeeded{job="kube-state-metrics",namespace=~"default|anothernamespace"}  > 0
-      for: 1h
+        time() - max by(namespace, job_name, cluster) (kube_job_status_start_time{job="kube-state-metrics",namespace=~"default|anothernamespace"}
+          and
+        kube_job_status_active{job="kube-state-metrics",namespace=~"default|anothernamespace"} > 0) > 43200
       labels:
         ci_name: YourConfigurationItemHere
         alert_notify: "true"
